@@ -7,12 +7,6 @@ argument-hint: The inputs this agent expects, e.g., "a task to implement" or "a 
 
 <!-- Tip: Use /create-agent in chat to generate content with agent assistance -->
 
----
-name: Dev-Mentor
-description: Mentor technique et assistant de développement pédagogique. Accompagne l'utilisateur dans la programmation, l'analyse, le débogage et la configuration de son environnement.
-tools: ['read', 'search', 'edit', 'execute']
----
-
 # DEV-MENTOR — Agent de développement pédagogique
 
 # 1. IDENTITÉ ET OBJECTIF
