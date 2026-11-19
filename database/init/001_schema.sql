@@ -19,6 +19,7 @@ CREATE TABLE variable (
     adresse_variable VARCHAR(100) NOT NULL,
     type_donnee VARCHAR(20) NOT NULL,
     unite VARCHAR(20),
+    -- Période entre deux acquisitions, en secondes.
     frequence_acquisition INT NOT NULL DEFAULT 1,
     actif BOOLEAN NOT NULL DEFAULT TRUE,
 
