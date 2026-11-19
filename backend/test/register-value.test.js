@@ -1,3 +1,4 @@
+// Tests rédigés avec l’assistance d’une IA ; leurs cas doivent être validés par l’équipe.
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const decodeRegister = require("../services/register-value");

@@ -1,3 +1,4 @@
+// Fichier développé avec l’assistance d’une IA ; le code doit être relu et validé par l’équipe.
 const express = require("express");
 const pool = require("../db");
 
@@ -16,6 +17,7 @@ const selectFields = `
 `;
 const dataTypes = new Set(["INT16", "UINT16"]);
 
+// Convertit un identifiant d’URL en entier positif, sinon retourne null.
 function parseId(value) {
   if (typeof value !== "string" || !/^\d+$/.test(value)) {
     return null;
@@ -24,6 +26,7 @@ function parseId(value) {
   return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
+// Valide un entier dans la plage demandée, y compris lorsqu’il vient d’un formulaire.
 function parseInteger(value, minimum, maximum) {
   const parsed = typeof value === "number"
     ? value
@@ -35,6 +38,7 @@ function parseInteger(value, minimum, maximum) {
     : null;
 }
 
+// Valide les champs d’une variable avant son insertion ou sa mise à jour partielle.
 function validateBody(body, partial = false) {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return { error: "Le corps de la requête doit être un objet JSON" };
@@ -109,6 +113,7 @@ function validateBody(body, partial = false) {
   return { values };
 }
 
+// GET /api/automates/:automateId/variables : liste les variables d’un automate.
 router.get("/automates/:automateId/variables", async (req, res) => {
   const automateId = parseId(req.params.automateId);
   if (!automateId) {
@@ -136,6 +141,7 @@ router.get("/automates/:automateId/variables", async (req, res) => {
   }
 });
 
+// POST /api/automates/:automateId/variables : ajoute une variable à un automate.
 router.post("/automates/:automateId/variables", async (req, res) => {
   const automateId = parseId(req.params.automateId);
   if (!automateId) {
@@ -181,6 +187,7 @@ router.post("/automates/:automateId/variables", async (req, res) => {
   }
 });
 
+// GET /api/variables/:id : renvoie la configuration d’une variable.
 router.get("/variables/:id", async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) {
@@ -202,6 +209,7 @@ router.get("/variables/:id", async (req, res) => {
   }
 });
 
+// PATCH /api/variables/:id : modifie la configuration ou désactive la variable.
 router.patch("/variables/:id", async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) {

@@ -1,3 +1,4 @@
+// Fichier développé avec l’assistance d’une IA ; le code doit être relu et validé par l’équipe.
 const express = require("express");
 const pool = require("../db");
 
@@ -7,6 +8,7 @@ const MAX_EXPORT_ROWS = 10000;
 const timestampPattern =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/;
 
+// Convertit un identifiant d’URL en entier positif, sinon retourne null.
 function parseId(value) {
   if (typeof value !== "string" || !/^\d+$/.test(value)) {
     return null;
@@ -15,6 +17,7 @@ function parseId(value) {
   return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
+// Valide une date ISO 8601 avec fuseau et la convertit au format SQL UTC.
 function parseTimestamp(value, field) {
   if (value === undefined) {
     return { value: null };
@@ -34,6 +37,7 @@ function parseTimestamp(value, field) {
   };
 }
 
+// Valide les bornes temporelles et vérifie que la date de début précède la fin.
 function parsePeriod(query) {
   const from = parseTimestamp(query.from, "from");
   if (from.error) {
@@ -49,6 +53,7 @@ function parsePeriod(query) {
   return { from: from.value, to: to.value };
 }
 
+// Valide le nombre de relevés à retourner en appliquant une limite maximale.
 function parseLimit(value, defaultValue, maximum) {
   if (value === undefined) {
     return defaultValue;
@@ -62,6 +67,7 @@ function parseLimit(value, defaultValue, maximum) {
     : null;
 }
 
+// Vérifie que la variable existe avant de consulter ses relevés.
 async function variableExists(id) {
   const rows = await pool.query(
     "SELECT id_variable FROM variable WHERE id_variable = ?",
@@ -70,6 +76,7 @@ async function variableExists(id) {
   return rows.length > 0;
 }
 
+// Récupère les relevés d’une variable pour une période et une limite données.
 async function getReadings(id, period, limit, direction = "ASC") {
   const conditions = ["id_variable = ?"];
   const parameters = [id];
@@ -93,15 +100,18 @@ async function getReadings(id, period, limit, direction = "ASC") {
   );
 }
 
+// Échappe une valeur pour qu’elle reste dans une seule cellule CSV.
 function escapeCsv(value) {
   const text = value instanceof Date ? value.toISOString() : String(value ?? "");
   return `"${text.replaceAll('"', '""')}"`;
 }
 
+// Convertit l’identifiant BIGINT en chaîne pour permettre la sérialisation JSON.
 function serializeReading(reading) {
   return { ...reading, id_releve: String(reading.id_releve) };
 }
 
+// Valide l’identifiant de variable et envoie directement la réponse d’erreur si nécessaire.
 async function validateVariableRequest(req, res) {
   const id = parseId(req.params.id);
   if (!id) {
@@ -115,6 +125,7 @@ async function validateVariableRequest(req, res) {
   return id;
 }
 
+// GET /api/variables/:id/releves/latest : renvoie le relevé le plus récent.
 router.get("/variables/:id/releves/latest", async (req, res) => {
   try {
     const id = await validateVariableRequest(req, res);
@@ -137,6 +148,7 @@ router.get("/variables/:id/releves/latest", async (req, res) => {
   }
 });
 
+// GET /api/variables/:id/releves.csv : exporte une période limitée au format CSV.
 router.get("/variables/:id/releves.csv", async (req, res) => {
   try {
     const id = await validateVariableRequest(req, res);
@@ -183,6 +195,7 @@ router.get("/variables/:id/releves.csv", async (req, res) => {
   }
 });
 
+// GET /api/variables/:id/releves : renvoie l’historique filtré et limité.
 router.get("/variables/:id/releves", async (req, res) => {
   try {
     const id = await validateVariableRequest(req, res);

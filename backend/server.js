@@ -1,3 +1,4 @@
+// Fichier modifié avec l’assistance d’une IA ; les changements doivent être relus et validés.
 require("dotenv").config({ path: "../.env" });
 const pool = require("./db");
 const express = require("express");
@@ -12,10 +13,12 @@ app.use("/api/automates", automatesRoutes);
 app.use("/api", variablesRoutes);
 app.use("/api", relevesRoutes);
 
+// GET /health : vérifie que le serveur HTTP Express répond.
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
+// GET /health/db : vérifie que le backend peut interroger MariaDB.
 app.get("/health/db", async (_req, res) => {
   try {
     const rows = await pool.query("SELECT 1 AS result");
@@ -37,6 +40,7 @@ const server = app.listen(port, () => {
 });
 
 let shuttingDown = false;
+// Ferme proprement HTTP, le collecteur et le pool MariaDB à l’arrêt du processus.
 function shutdown(signal) {
   if (shuttingDown) {
     return;
@@ -62,5 +66,6 @@ function shutdown(signal) {
   });
 }
 
+// Permet au processus de s’arrêter proprement lors d’un arrêt manuel ou Docker.
 process.once("SIGINT", () => shutdown("SIGINT"));
 process.once("SIGTERM", () => shutdown("SIGTERM"));

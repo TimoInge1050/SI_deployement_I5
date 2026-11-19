@@ -1,3 +1,5 @@
+//Les fonctions annexe (de type validation et serialisation) ont été programmés par IA, les fonctions principales (get, post, patch) ont été programmées par l'humain sous assistance.
+
 const { isIP } = require("node:net");
 const express = require("express");
 const pool = require("../db");
@@ -14,7 +16,7 @@ const columns = {
 const selectFields = `
   id_automate, nom, adresse_ip, port, protocole, unit_id, actif
 `;
-
+// Convertit un identifiant d’URL en entier positif, sinon retourne null.
 function parseId(value) {
   if (typeof value !== "string" || !/^\d+$/.test(value)) {
     return null;
@@ -22,7 +24,7 @@ function parseId(value) {
   const id = Number(value);
   return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
-
+// Valide les champs fournis avant la création ou la modification d’un automate.
 function validateBody(body, partial = false) {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     return { error: "Le corps de la requête doit être un objet JSON" };
@@ -85,6 +87,7 @@ function validateBody(body, partial = false) {
   return { values };
 }
 
+// GET /api/automates : renvoie la liste des automates.
 router.get("/", async (_req, res) => {
   try {
     const automates = await pool.query(`
@@ -99,6 +102,7 @@ router.get("/", async (_req, res) => {
   }
 });
 
+// GET /api/automates/:id : renvoie un automate ou une erreur 404.
 router.get("/:id", async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) {
@@ -120,6 +124,7 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// POST /api/automates : valide et enregistre un nouvel automate.
 router.post("/", async (req, res) => {
   const { values, error } = validateBody(req.body);
   if (error) {
@@ -150,6 +155,7 @@ router.post("/", async (req, res) => {
   }
 });
 
+// PATCH /api/automates/:id : modifie les champs fournis, y compris actif.
 router.patch("/:id", async (req, res) => {
   const id = parseId(req.params.id);
   if (!id) {

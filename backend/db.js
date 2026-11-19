@@ -1,3 +1,4 @@
+// Fichier développé avec l’assistance d’une IA ; le code doit être relu et validé par l’équipe.
 const mariadb = require("mariadb");
 
 const { DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME } = process.env;

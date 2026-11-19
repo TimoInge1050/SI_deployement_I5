@@ -1,3 +1,4 @@
+// Fichier développé avec l’assistance d’une IA ; le code doit être relu et validé par l’équipe.
 const ModbusRTU = require("modbus-serial");
 const pool = require("../db");
 const decodeRegister = require("./register-value");
@@ -6,6 +7,7 @@ const TICK_MS = 1000;
 const DATABASE_RETRY_MS = 5000;
 const MODBUS_TIMEOUT_MS = 3000;
 
+// Ferme la connexion Modbus ouverte pour une variable et signale les erreurs de fermeture.
 async function closeClient(client, variableId) {
   if (!client.isOpen) {
     return;
@@ -26,10 +28,11 @@ async function closeClient(client, variableId) {
   });
 }
 
+// Lit un registre Modbus, convertit sa valeur et enregistre aussi les échecs de lecture.
 async function pollVariable(variable) {
   const client = new ModbusRTU();
   let value = null;
-  let quality = "GOOD";
+  let quality = "GOOD"; // Par défaut:"GOOD" | "ERROR"
 
   try {
     client.setTimeout(MODBUS_TIMEOUT_MS);
@@ -59,6 +62,7 @@ async function pollVariable(variable) {
   }
 }
 
+// Recharge la configuration active et déclenche les acquisitions arrivées à échéance.
 async function runCycle(schedules) {
   let variables;
   try {
@@ -102,12 +106,14 @@ async function runCycle(schedules) {
   return true;
 }
 
+// Démarre la boucle d’acquisition indépendante des requêtes HTTP.
 function startCollector() {
   const schedules = new Map();
   let stopped = false;
   let timer;
   let currentCycle = Promise.resolve();
 
+  // Exécute un cycle puis programme le suivant, avec une temporisation si la BDD échoue.
   async function tick() {
     if (stopped) {
       return;
@@ -127,6 +133,7 @@ function startCollector() {
 
   void tick();
 
+  // Arrête le timer et attend la fin du cycle en cours.
   return async function stopCollector() {
     stopped = true;
     clearTimeout(timer);
