@@ -2,6 +2,7 @@
 require("dotenv").config({ path: "../.env" });
 const pool = require("./db");
 const express = require("express");
+const path = require("node:path");
 const automatesRoutes = require("./routes/automates");
 const variablesRoutes = require("./routes/variables");
 const relevesRoutes = require("./routes/releves");
@@ -12,6 +13,7 @@ app.use(express.json());
 app.use("/api/automates", automatesRoutes);
 app.use("/api", variablesRoutes);
 app.use("/api", relevesRoutes);
+app.use(express.static(path.resolve(__dirname, "../frontend")));
 
 // GET /health : vérifie que le serveur HTTP Express répond.
 app.get("/health", (_req, res) => {

@@ -3,36 +3,120 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Supervision industrielle</title>
-
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  >
+  <meta name="theme-color" content="#f5f7fb">
+  <title>Suivi Process</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/style.css">
 </head>
-
-<body class="bg-light">
-  <nav class="navbar navbar-dark bg-dark">
-    <div class="container-fluid">
-      <span class="navbar-brand">Supervision Process</span>
+<body class="bg-body-tertiary">
+  <header class="navbar bg-white border-bottom shadow-sm">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center gap-2 fw-semibold" href="./index.html" aria-label="Accueil Suivi Process">
+        <span class="brand-mark">SP</span>
+        <span>Suivi <strong>Process</strong></span>
+      </a>
+      <span class="navbar-text d-flex align-items-center gap-2 small">
+        <span class="status-dot"></span> Supervision industrielle
+      </span>
     </div>
-  </nav>
+  </header>
 
-  <main class="container py-4">
-    <h1 class="mb-4">Tableau de bord</h1>
+  <main class="container py-5">
+    <section class="hero-panel rounded-4 p-4 p-md-5 mb-5">
+      <div class="row align-items-center g-4">
+        <div class="col">
+          <p class="eyebrow mb-2">VOTRE ESPACE DE SUPERVISION</p>
+          <h1 class="display-5 fw-bold mb-3">Suivi Process</h1>
+          <p class="lead text-secondary mb-0">Sélectionnez une API pour configurer les données de votre automate et consulter leur évolution.</p>
+        </div>
+        <div class="col-auto d-none d-sm-block">
+          <div class="hero-symbol" aria-hidden="true">⌁</div>
+        </div>
+      </div>
+    </section>
 
-    <section id="variables" class="row g-3"></section>
-
-    <section class="card mt-4">
-      <div class="card-header">Valeurs en temps réel</div>
-      <div class="card-body">
-        <canvas id="chart"></canvas>
+    <section aria-labelledby="automates-title">
+      <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+        <div>
+          <p class="eyebrow mb-2">VOS ÉQUIPEMENTS</p>
+          <h2 id="automates-title" class="h3 fw-bold mb-1">Choisir une API</h2>
+          <p class="text-secondary mb-0">Ouvrez un automate pour gérer les registres et consulter les relevés.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span id="automate-count" class="badge rounded-pill text-bg-light border text-secondary"></span>
+          <button id="open-automate-form" class="btn btn-primary" type="button">＋ Connecter une nouvelle API</button>
+        </div>
+      </div>
+      <div id="page-message" class="alert alert-danger" role="status" hidden></div>
+      <div id="automates-list" class="row g-3" aria-live="polite">
+        <div class="col-12"><div class="card border-0 shadow-sm"><div class="card-body text-center text-secondary py-5">Chargement des API…</div></div></div>
       </div>
     </section>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="./js/app.js"></script>
+  <dialog id="automate-dialog" aria-labelledby="automate-dialog-title">
+    <div class="p-4 p-md-5">
+      <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+        <div>
+          <p class="eyebrow mb-2">NOUVEL ÉQUIPEMENT</p>
+          <h2 id="automate-dialog-title" class="h3 fw-bold mb-2">Connecter une API Modbus TCP</h2>
+          <p class="text-secondary mb-0">Renseignez l’adresse réseau de l’automate et les registres à acquérir.</p>
+        </div>
+        <button id="close-automate-form" class="btn-close" type="button" aria-label="Fermer"></button>
+      </div>
+
+      <div id="automate-form-message" class="alert alert-danger" role="alert" hidden></div>
+      <form id="automate-form">
+        <fieldset class="mb-4">
+          <legend class="h5 fw-bold mb-3">Connexion</legend>
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="automate-name">Nom de l’automate</label>
+              <input id="automate-name" class="form-control" name="nom" type="text" maxlength="100" required placeholder="Ex. Ligne de production">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label" for="automate-ip">Adresse IP de l’automate</label>
+              <input id="automate-ip" class="form-control" name="adresse_ip" type="text" required autocomplete="off" placeholder="Ex. 192.168.1.20">
+              <div class="form-text">Adresse IPv4 ou IPv6 accessible depuis le serveur backend.</div>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="automate-port">Port Modbus TCP</label>
+              <input id="automate-port" class="form-control" name="port" type="number" min="1" max="65535" step="1" value="502" required>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="automate-unit-id">Unit ID Modbus</label>
+              <input id="automate-unit-id" class="form-control" name="unit_id" type="number" min="0" max="255" step="1" value="1" required>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label" for="automate-protocol">Protocole</label>
+              <input id="automate-protocol" class="form-control" type="text" value="Modbus TCP" disabled>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="mb-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+              <legend class="h5 fw-bold mb-1">Variables à acquérir</legend>
+              <p class="small text-secondary mb-0">Les variables sont facultatives et pourront aussi être ajoutées plus tard.</p>
+            </div>
+            <button id="add-variable-row" class="btn btn-outline-primary btn-sm" type="button">＋ Ajouter une variable</button>
+          </div>
+          <div id="new-variable-rows"></div>
+        </fieldset>
+
+        <div class="d-flex flex-wrap justify-content-end gap-2">
+          <button id="cancel-automate-form" class="btn btn-outline-secondary" type="button">Annuler</button>
+          <button id="save-automate" class="btn btn-primary" type="submit">Enregistrer l’API</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <footer class="container py-4 border-top text-center text-secondary small">Suivi Process <span class="mx-1">•</span> Supervision et historique des données</footer>
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>

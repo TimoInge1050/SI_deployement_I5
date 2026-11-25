@@ -247,4 +247,26 @@ router.patch("/variables/:id", async (req, res) => {
   }
 });
 
+// DELETE /api/variables/:id : supprime une variable et son historique associé.
+router.delete("/variables/:id", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: "Identifiant de variable invalide" });
+  }
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM variable WHERE id_variable = ?",
+      [id],
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Variable introuvable" });
+    }
+    res.status(204).end();
+  } catch (error) {
+    console.error("Échec de la suppression de la variable :", error);
+    res.status(500).json({ error: "Impossible de supprimer la variable" });
+  }
+});
+
 module.exports = router;
