@@ -1,4 +1,4 @@
-import { createAutomate, createVariable, getAutomates, getVariables } from "./api.js";
+import { createAutomate, createVariable, getAutomates, getVariables, getBackendStatus } from "./api.js";
 
 const automatesList = document.querySelector("#automates-list");
 const message = document.querySelector("#page-message");
@@ -31,6 +31,21 @@ function showPageMessage(text, kind = "success") {
   message.textContent = text;
   message.className = `alert alert-${kind}`;
   message.hidden = false;
+}
+
+function refreshbackendStatus() {
+  const statusElement = document.querySelector("#backend-status");
+  const dotElement = document.querySelector(".status-dot");
+  getBackendStatus()
+    .then((status) => {
+      statusElement.textContent = status.status;
+      dotElement.className = `status-dot ${status.status === "OK" ? "bg-success" : "bg-danger"}`;
+    })
+    .catch((error) => {
+      statusElement.textContent = "Erreur";
+      dotElement.className = "status-dot bg-danger";
+      console.error("Erreur lors de la récupération du statut du backend :", error);
+    });
 }
 
 function resetAutomateForm() {
@@ -212,3 +227,6 @@ automateForm.addEventListener("submit", submitAutomateForm);
 automateDialog.addEventListener("close", resetAutomateForm);
 
 loadAutomates();
+
+// Actualisation du statut bacenkend toutes les 5 secondes
+setInterval(refreshbackendStatus, 5000);

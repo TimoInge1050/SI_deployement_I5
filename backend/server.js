@@ -17,7 +17,7 @@ app.use(express.static(path.resolve(__dirname, "../frontend")));
 
 // GET /health : vérifie que le serveur HTTP Express répond.
 app.get("/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
+  res.status(200).json({ status: "OK" });
 });
 
 // GET /health/db : vérifie que le backend peut interroger MariaDB.

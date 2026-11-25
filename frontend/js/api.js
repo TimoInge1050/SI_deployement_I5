@@ -69,3 +69,11 @@ export function deleteVariable(variableId) {
     method: "DELETE",
   });
 }
+
+export async function getBackendStatus() {
+  const response = await fetch(`/health`, { method: "GET" });
+  if (response.status === 204) {
+    return null;
+  }
+  return response.json();
+}
