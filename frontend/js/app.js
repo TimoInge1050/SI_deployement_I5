@@ -1,4 +1,4 @@
-import { createAutomate, createVariable, getAutomates, getVariables, getBackendStatus } from "./api.js";
+import { createAutomate, createVariable, deleteAutomate, getAutomates, getVariables, getBackendStatus } from "./api.js";
 
 const automatesList = document.querySelector("#automates-list");
 const message = document.querySelector("#page-message");
@@ -223,7 +223,8 @@ async function loadAutomates() {
 
     automatesList.innerHTML = items.map(({ automate, variables }) => `
       <div class="col-12 col-md-6 col-lg-4">
-        <a class="card automate-card h-100 border-0 shadow-sm text-decoration-none text-reset" href="./suivi.html?automate=${encodeURIComponent(automate.id_automate)}">
+        <div class="card automate-card h-100 border-0 shadow-sm">
+        <a class="text-decoration-none text-reset" href="./suivi.html?automate=${encodeURIComponent(automate.id_automate)}">
           <div class="card-body p-4">
             <div class="d-flex align-items-center justify-content-between mb-4">
               <span class="brand-mark fs-4" aria-hidden="true">⌁</span>
@@ -238,6 +239,10 @@ async function loadAutomates() {
             </div>
           </div>
         </a>
+        <div class="card-footer bg-white border-0 px-4 pb-4 pt-0">
+          <button class="btn btn-outline-danger btn-sm w-100" type="button" data-delete-automate="${escapeHtml(automate.id_automate)}" data-automate-name="${escapeHtml(automate.nom)}">Supprimer l’API</button>
+        </div>
+        </div>
       </div>
     `).join("");
     return true;
@@ -246,6 +251,35 @@ async function loadAutomates() {
     return false;
   }
 }
+
+automatesList.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-delete-automate]");
+  if (!button) {
+    return;
+  }
+
+  const automateId = button.dataset.deleteAutomate;
+  const automateName = button.dataset.automateName;
+  const confirmed = window.confirm(
+    `Supprimer l’API « ${automateName} » ? Ses variables et tous les relevés associés seront également supprimés. Cette action est irréversible.`,
+  );
+  if (!confirmed) {
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = "Suppression…";
+  try {
+    await deleteAutomate(automateId);
+    if (await loadAutomates()) {
+      showPageMessage(`L’API « ${automateName} » et ses données associées ont été supprimées.`);
+    }
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = "Supprimer l’API";
+    showPageMessage(error.message, "danger");
+  }
+});
 
 document.querySelector("#open-automate-form").addEventListener("click", () => {
   automateDialog.showModal();

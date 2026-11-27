@@ -228,4 +228,26 @@ router.patch("/:id", async (req, res) => {
   }
 });
 
+// DELETE /api/automates/:id : supprime un automate et ses données liées.
+router.delete("/:id", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: "Identifiant d’automate invalide" });
+  }
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM automate WHERE id_automate = ?",
+      [id],
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Automate introuvable" });
+    }
+    res.status(204).end();
+  } catch (error) {
+    console.error("Échec de la suppression de l’automate :", error);
+    res.status(500).json({ error: "Impossible de supprimer l’automate" });
+  }
+});
+
 module.exports = router;

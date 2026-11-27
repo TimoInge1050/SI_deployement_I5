@@ -30,6 +30,8 @@ Depuis l’accueil, le bouton « Connecter une nouvelle API » permet d’enregi
 un automate Modbus TCP (nom, adresse IP, port et Unit ID) et ses variables
 directement dans la base via le backend. Les variables peuvent aussi être
 ajoutées ultérieurement depuis la fiche de l’automate.
+Chaque carte API propose aussi sa suppression ; une confirmation prévient que
+les variables et les relevés associés seront supprimés en cascade.
 
 Le backend teste la connexion TCP de chaque automate actif toutes les cinq
 secondes, même sans variable configurée. L’état de connexion des automates est

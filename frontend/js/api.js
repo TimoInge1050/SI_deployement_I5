@@ -37,6 +37,12 @@ export function createAutomate(automate) {
   });
 }
 
+export function deleteAutomate(automateId) {
+  return request(`/automates/${encodeURIComponent(automateId)}`, {
+    method: "DELETE",
+  });
+}
+
 export function getVariables(automateId) {
   return request(`/automates/${encodeURIComponent(automateId)}/variables`);
 }
