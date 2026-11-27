@@ -25,6 +25,10 @@ export function getAutomates() {
   return request("/automates");
 }
 
+export function getAutomateStatus(automateId) {
+  return request(`/automates/${encodeURIComponent(automateId)}/status`);
+}
+
 export function createAutomate(automate) {
   return request("/automates", {
     method: "POST",

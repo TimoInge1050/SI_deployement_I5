@@ -2,6 +2,7 @@ import {
   createVariable,
   deleteVariable,
   getAutomates,
+  getAutomateStatus,
   getReadings,
   getVariables,
   updateVariable,
@@ -11,6 +12,7 @@ const automateId = new URLSearchParams(window.location.search).get("automate");
 const pageTitle = document.querySelector("#page-title");
 const description = document.querySelector("#automate-description");
 const connectionStatus = document.querySelector("#connection-status");
+const automateLogs = document.querySelector("#automate-logs");
 const pageMessage = document.querySelector("#page-message");
 const variablesBody = document.querySelector("#variables-body");
 const variableCount = document.querySelector("#variable-count");
@@ -39,7 +41,9 @@ const state = {
   chart: null,
   readingsPage: 1,
   selectedVariableIds: null,
+  logsMarkup: null,
 };
+let statusPollInProgress = false;
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -64,6 +68,61 @@ function hideMessage() {
 function formatDate(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? String(value ?? "—") : date.toLocaleString("fr-FR");
+}
+
+function updateConnectionStatus(connection, lastCheckedAt) {
+  const states = {
+    connected: ["text-bg-success", "Connecté"],
+    disconnected: ["text-bg-danger", "Déconnecté"],
+    inactive: ["text-bg-secondary", "Automate inactif"],
+    unknown: ["text-bg-warning", "En attente du test de connexion"],
+  };
+  const [style, label] = states[connection] ?? states.unknown;
+  connectionStatus.className = `badge rounded-pill px-3 py-2 ${style}`;
+  connectionStatus.textContent = label;
+  connectionStatus.title = lastCheckedAt
+    ? `Dernière tentative : ${formatDate(lastCheckedAt)}`
+    : "Aucune tentative de connexion enregistrée";
+}
+
+function renderAutomateLogs(logs) {
+  const markup = logs.length === 0
+    ? '<div class="terminal-empty">Aucun journal pour le moment. Les événements apparaîtront lors des acquisitions.</div>'
+    : logs.map((entry) => `
+      <div class="terminal-line">
+        <time class="terminal-timestamp">${escapeHtml(formatDate(entry.timestamp))}</time>
+        <span class="terminal-level terminal-level-${escapeHtml(entry.level)}">${escapeHtml(entry.level.toUpperCase())}</span>
+        <span class="terminal-message">${escapeHtml(entry.message)}</span>
+      </div>
+    `).join("");
+  if (markup === state.logsMarkup) {
+    return;
+  }
+
+  const wasAtBottom = automateLogs.scrollHeight - automateLogs.scrollTop - automateLogs.clientHeight < 24;
+  automateLogs.innerHTML = markup;
+  state.logsMarkup = markup;
+  if (wasAtBottom) {
+    automateLogs.scrollTop = automateLogs.scrollHeight;
+  }
+}
+
+async function refreshAutomateStatus() {
+  if (!state.automate || statusPollInProgress) {
+    return;
+  }
+  statusPollInProgress = true;
+  try {
+    const status = await getAutomateStatus(automateId);
+    updateConnectionStatus(status.connection, status.lastCheckedAt);
+    renderAutomateLogs(status.logs);
+  } catch (error) {
+    connectionStatus.className = "badge rounded-pill px-3 py-2 text-bg-danger";
+    connectionStatus.textContent = "Statut indisponible";
+    console.error("Erreur lors de la récupération de l’état de l’automate :", error);
+  } finally {
+    statusPollInProgress = false;
+  }
 }
 
 function variableFor(reading) {
@@ -313,9 +372,9 @@ async function loadPage() {
     }
     pageTitle.textContent = `Suivi Process ${state.automate.nom}`;
     document.title = `Suivi Process ${state.automate.nom}`;
-    connectionStatus.className = `badge rounded-pill px-3 py-2 ${state.automate.actif ? "text-bg-success" : "text-bg-secondary"}`;
-    connectionStatus.textContent = state.automate.actif ? "Automate actif" : "Automate inactif";
+    updateConnectionStatus(state.automate.connection, state.automate.lastCheckedAt);
     await refreshData();
+    await refreshAutomateStatus();
   } catch (error) {
     connectionStatus.className = "badge rounded-pill px-3 py-2 text-bg-danger";
     connectionStatus.textContent = "Erreur";
@@ -427,3 +486,4 @@ variablesBody.addEventListener("click", async (event) => {
 
 updateHistoryDaysLabel();
 loadPage();
+setInterval(refreshAutomateStatus, 3000);

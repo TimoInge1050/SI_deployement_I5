@@ -2,13 +2,15 @@
 const ModbusRTU = require("modbus-serial");
 const pool = require("../db");
 const decodeRegister = require("./register-value");
+const { addLog, recordConnection } = require("./automate-monitor");
 
 const TICK_MS = 1000;
 const DATABASE_RETRY_MS = 5000;
+const AUTOMATE_CHECK_MS = 5000;
 const MODBUS_TIMEOUT_MS = 3000;
 
-// Ferme la connexion Modbus ouverte pour une variable et signale les erreurs de fermeture.
-async function closeClient(client, variableId) {
+// Ferme la connexion Modbus ouverte et signale les erreurs de fermeture.
+async function closeClient(client, target) {
   if (!client.isOpen) {
     return;
   }
@@ -17,12 +19,12 @@ async function closeClient(client, variableId) {
     try {
       client.close((error) => {
         if (error) {
-          console.error(`Échec de fermeture Modbus pour la variable ${variableId} :`, error);
+          console.error(`Échec de fermeture Modbus (${target}) :`, error);
         }
         resolve();
       });
     } catch (error) {
-      console.error(`Échec de fermeture Modbus pour la variable ${variableId} :`, error);
+      console.error(`Échec de fermeture Modbus (${target}) :`, error);
       resolve();
     }
   });
@@ -44,11 +46,20 @@ async function pollVariable(variable) {
       1,
     );
     value = decodeRegister(result.data[0], variable.type_donnee);
+    addLog(
+      variable.id_automate,
+      "info",
+      `${variable.nom} (registre ${variable.adresse_variable}) : ${value}`,
+    );
   } catch (error) {
     quality = "ERROR";
-    console.error(`Lecture Modbus échouée pour la variable ${variable.id_variable} :`, error);
+    addLog(
+      variable.id_automate,
+      "error",
+      `Lecture Modbus échouée pour ${variable.nom} (registre ${variable.adresse_variable}) : ${error.message}`,
+    );
   } finally {
-    await closeClient(client, variable.id_variable);
+    await closeClient(client, `variable ${variable.id_variable}`);
   }
 
   try {
@@ -58,30 +69,91 @@ async function pollVariable(variable) {
       [variable.id_variable, value, quality],
     );
   } catch (error) {
-    console.error(`Échec de l’enregistrement du relevé ${variable.id_variable} :`, error);
+    addLog(
+      variable.id_automate,
+      "error",
+      `Échec de l’enregistrement du relevé pour ${variable.nom} : ${error.message}`,
+    );
+  }
+}
+
+async function checkAutomateConnection(automate) {
+  const client = new ModbusRTU();
+  addLog(
+    automate.id_automate,
+    "info",
+    `Tentative de connexion TCP à ${automate.adresse_ip}:${automate.port}...`,
+  );
+
+  try {
+    client.setTimeout(MODBUS_TIMEOUT_MS);
+    await client.connectTCP(automate.adresse_ip, { port: Number(automate.port) });
+    recordConnection(automate.id_automate, true);
+    addLog(
+      automate.id_automate,
+      "info",
+      `Connexion TCP établie avec ${automate.adresse_ip}:${automate.port}.`,
+    );
+  } catch (error) {
+    recordConnection(automate.id_automate, false);
+    addLog(
+      automate.id_automate,
+      "error",
+      `Connexion TCP impossible à ${automate.adresse_ip}:${automate.port} : ${error.message}`,
+    );
+  } finally {
+    await closeClient(client, `automate ${automate.id_automate}`);
   }
 }
 
 // Recharge la configuration active et déclenche les acquisitions arrivées à échéance.
-async function runCycle(schedules) {
+async function runCycle(schedules, automateSchedules) {
+  let automates;
   let variables;
   try {
-    variables = await pool.query(`
+    [automates, variables] = await Promise.all([
+      pool.query(`
+        SELECT id_automate, adresse_ip, port
+        FROM automate
+        WHERE actif = TRUE
+          AND protocole = 'Modbus TCP'
+        ORDER BY id_automate
+      `),
+      pool.query(`
       SELECT v.id_variable, v.adresse_variable, v.type_donnee,
-             v.frequence_acquisition, a.adresse_ip, a.port, a.unit_id
+            v.nom, v.frequence_acquisition, a.id_automate,
+            a.adresse_ip, a.port, a.unit_id
       FROM variable AS v
       INNER JOIN automate AS a ON a.id_automate = v.id_automate
       WHERE v.actif = TRUE
         AND a.actif = TRUE
         AND a.protocole = 'Modbus TCP'
       ORDER BY v.id_variable
-    `);
+      `),
+    ]);
   } catch (error) {
-    console.error("Échec du chargement des variables à acquérir :", error);
+    console.error("Échec du chargement des automates ou variables à acquérir :", error);
     return false;
   }
 
   const now = Date.now();
+  const activeAutomateIds = new Set(automates.map((automate) => Number(automate.id_automate)));
+  for (const id of automateSchedules.keys()) {
+    if (!activeAutomateIds.has(id)) {
+      automateSchedules.delete(id);
+    }
+  }
+  const connectionChecks = [];
+  for (const automate of automates) {
+    const id = Number(automate.id_automate);
+    const nextAt = automateSchedules.get(id) ?? 0;
+    if (now >= nextAt) {
+      automateSchedules.set(id, now + AUTOMATE_CHECK_MS);
+      connectionChecks.push(checkAutomateConnection(automate));
+    }
+  }
+  await Promise.all(connectionChecks);
+
   const activeIds = new Set(variables.map((variable) => Number(variable.id_variable)));
   for (const id of schedules.keys()) {
     if (!activeIds.has(id)) {
@@ -109,6 +181,7 @@ async function runCycle(schedules) {
 // Démarre la boucle d’acquisition indépendante des requêtes HTTP.
 function startCollector() {
   const schedules = new Map();
+  const automateSchedules = new Map();
   let stopped = false;
   let timer;
   let currentCycle = Promise.resolve();
@@ -119,7 +192,7 @@ function startCollector() {
       return;
     }
 
-    currentCycle = runCycle(schedules);
+    currentCycle = runCycle(schedules, automateSchedules);
     let databaseReady = false;
     try {
       databaseReady = await currentCycle;

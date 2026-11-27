@@ -31,5 +31,12 @@ un automate Modbus TCP (nom, adresse IP, port et Unit ID) et ses variables
 directement dans la base via le backend. Les variables peuvent aussi être
 ajoutées ultérieurement depuis la fiche de l’automate.
 
+Le backend teste la connexion TCP de chaque automate actif toutes les cinq
+secondes, même sans variable configurée. L’état de connexion des automates est
+visible dans la liste et sur leur fiche ; le terminal affiche chaque tentative,
+son résultat et les lectures de variables. Les 100 derniers événements par
+automate sont conservés en mémoire et sont réinitialisés au redémarrage du
+backend.
+
 L’interface s’appuie principalement sur Bootstrap 5.3.3 chargé depuis jsDelivr ;
 `frontend/css/style.css` ne contient que les ajustements visuels propres au site.

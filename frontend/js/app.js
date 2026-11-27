@@ -33,6 +33,35 @@ function showPageMessage(text, kind = "success") {
   message.hidden = false;
 }
 
+function connectionBadge(connection) {
+  const states = {
+    connected: ["text-bg-success", "Connecté"],
+    disconnected: ["text-bg-danger", "Déconnecté"],
+    inactive: ["text-bg-secondary", "Automate inactif"],
+    unknown: ["text-bg-warning", "Connexion inconnue"],
+  };
+  return states[connection] ?? states.unknown;
+}
+
+async function refreshAutomateStatuses() {
+  try {
+    const automates = await getAutomates();
+    for (const automate of automates) {
+      const badge = automatesList.querySelector(
+        `[data-connection-status="${automate.id_automate}"]`,
+      );
+      if (!badge) {
+        continue;
+      }
+      const [style, label] = connectionBadge(automate.connection);
+      badge.className = `badge rounded-pill ${style}`;
+      badge.textContent = label;
+    }
+  } catch (error) {
+    console.error("Erreur lors de la récupération des connexions des automates :", error);
+  }
+}
+
 function refreshbackendStatus() {
   const statusElement = document.querySelector("#backend-status");
   const dotElement = document.querySelector(".status-dot");
@@ -202,6 +231,7 @@ async function loadAutomates() {
             </div>
             <h3 class="h5 fw-bold mb-1">${escapeHtml(automate.nom)}</h3>
             <p class="text-secondary small mb-4">${escapeHtml(automate.adresse_ip)}:${escapeHtml(automate.port)}</p>
+            <span class="badge rounded-pill d-inline-block mb-3 ${connectionBadge(automate.connection)[0]}" data-connection-status="${escapeHtml(automate.id_automate)}">${connectionBadge(automate.connection)[1]}</span>
             <div class="d-flex justify-content-between align-items-center border-top pt-3 small text-secondary">
               <span>${variables.length} variable${variables.length > 1 ? "s" : ""} configurée${variables.length > 1 ? "s" : ""}</span>
               <span class="text-primary fs-5" aria-hidden="true">→</span>
@@ -228,5 +258,6 @@ automateDialog.addEventListener("close", resetAutomateForm);
 
 loadAutomates();
 
-// Actualisation du statut bacenkend toutes les 5 secondes
+// Actualisation du statut backend toutes les 5 secondes
 setInterval(refreshbackendStatus, 5000);
+setInterval(refreshAutomateStatuses, 5000);

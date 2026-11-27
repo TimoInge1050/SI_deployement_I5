@@ -3,6 +3,10 @@
 const { isIP } = require("node:net");
 const express = require("express");
 const pool = require("../db");
+const {
+  getAutomateConnectionStatus,
+  getAutomateStatus,
+} = require("../services/automate-monitor");
 
 const router = express.Router();
 const columns = {
@@ -95,7 +99,10 @@ router.get("/", async (_req, res) => {
       FROM automate
       ORDER BY id_automate
     `);
-    res.json(automates);
+    res.json(automates.map((automate) => ({
+      ...automate,
+      ...getAutomateConnectionStatus(automate.id_automate, Number(automate.actif) === 1),
+    })));
   } catch (error) {
     console.error("Échec de la récupération des automates :", error);
     res.status(500).json({ error: "Impossible de récupérer les automates" });
@@ -117,10 +124,38 @@ router.get("/:id", async (req, res) => {
     if (automates.length === 0) {
       return res.status(404).json({ error: "Automate introuvable" });
     }
-    res.json(automates[0]);
+    res.json({
+      ...automates[0],
+      ...getAutomateConnectionStatus(automates[0].id_automate, Number(automates[0].actif) === 1),
+    });
   } catch (error) {
     console.error("Échec de la récupération de l’automate :", error);
     res.status(500).json({ error: "Impossible de récupérer l’automate" });
+  }
+});
+
+// GET /api/automates/:id/status : renvoie l’état de connexion et les journaux récents.
+router.get("/:id/status", async (req, res) => {
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: "Identifiant d’automate invalide" });
+  }
+
+  try {
+    const automates = await pool.query(
+      `SELECT id_automate, actif FROM automate WHERE id_automate = ?`,
+      [id],
+    );
+    if (automates.length === 0) {
+      return res.status(404).json({ error: "Automate introuvable" });
+    }
+    res.json({
+      id_automate: automates[0].id_automate,
+      ...getAutomateStatus(id, Number(automates[0].actif) === 1),
+    });
+  } catch (error) {
+    console.error("Échec de la récupération de l’état de l’automate :", error);
+    res.status(500).json({ error: "Impossible de récupérer l’état de l’automate" });
   }
 });
 

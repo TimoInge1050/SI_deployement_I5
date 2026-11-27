@@ -138,6 +138,54 @@ dialog::backdrop {
   accent-color: var(--process-blue);
 }
 
+.automate-terminal {
+  max-height: 320px;
+  min-height: 120px;
+  overflow: auto;
+  padding: 1rem;
+  border-radius: .75rem;
+  color: #d7e1f4;
+  background: #172235;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .8rem;
+}
+
+.terminal-line {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: .75rem;
+  padding: .2rem 0;
+}
+
+.terminal-timestamp {
+  color: #91a1bb;
+  white-space: nowrap;
+}
+
+.terminal-level {
+  font-weight: 700;
+}
+
+.terminal-level-info {
+  color: #63c9a5;
+}
+
+.terminal-level-warning {
+  color: #ffd166;
+}
+
+.terminal-level-error {
+  color: #ff8088;
+}
+
+.terminal-message {
+  overflow-wrap: anywhere;
+}
+
+.terminal-empty {
+  color: #91a1bb;
+}
+
 .form-label {
   color: #4a5870;
   font-size: .875rem;
@@ -183,5 +231,14 @@ dialog::backdrop {
 @media (max-width: 575.98px) {
   .chart-wrap {
     height: 250px;
+  }
+
+  .terminal-line {
+    grid-template-columns: 1fr auto;
+    gap: .2rem .6rem;
+  }
+
+  .terminal-message {
+    grid-column: 1 / -1;
   }
 }
